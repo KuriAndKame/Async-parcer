@@ -1,8 +1,9 @@
 import asyncio
 import aiohttp
 from datetime import datetime
-from news import News
+from models.news import News
 from bs4 import BeautifulSoup
+from playwright.async_api import async_playwright
 
 # url для теста: https://dzen.ru/news
 
@@ -17,6 +18,16 @@ class Scraper:
         self.__source = source
         self.__headers = {'User-Agent': 'Mozilla/5.0'}
         self.__timeout = aiohttp.ClientTimeout(total=10)
+
+    async def _fetch_get_playwright(self, url: str) -> str:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
+            await page.goto(url)
+            await page.wait_for_selector('.news-site--card-top-avatar__rootElement-1U', timeout=10000)
+            content = await page.content()
+            await browser.close()
+            return content
 
     async def _fetch_get(self, url: str) -> str:
         response = await self.__session.get(url, timeout=self.__timeout)
@@ -47,7 +58,7 @@ class Scraper:
             tasks = []
             all_news = []
             for url in self.__source:
-                tasks.append(self._fetch_get(url))
+                tasks.append(self._fetch_get_playwright(url))
             htmls = await asyncio.gather(*tasks, return_exceptions=True)
             for html, url in zip(htmls, self.__source):
                 if isinstance(html, Exception):

@@ -1,5 +1,5 @@
 import asyncpg
-from news import News
+from .news import News
 
 
 class Database:
@@ -14,7 +14,7 @@ class Database:
 
     async def save(self, news_list: list[News]):
         for news in news_list:
-            await self.__pool.execute('''INSERT INTO news(url, title) VALUES ($1, $2) ON CONFLIT(url) DO NOTHING''', news.url, news.title)
+            await self.__pool.execute('''INSERT INTO news(url, title) VALUES ($1, $2) ON CONFLICT(url) DO NOTHING''', news.url, news.title)
 
     async def get_all(self, limit=100) -> list[News]:
         rows = await self.__pool.fetch('''SELECT * FROM news LIMIT $1 ''', limit)
